@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Settings · MarketCraft AI{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-shell-wide">
+    <span class="page-eyebrow violet">⚙️ Preferences</span>
+    <h1>Settings</h1>
+    <p>Manage your account preferences and connected integrations.</p>
+  </div>
+</div>
+
+<div class="page-shell-wide">
+  <div class="card kit-block" style="max-width: 600px;">
+    <h3>Profile Information</h3>
+    <form class="form-group" style="margin-top: 16px;">
+      <label>Full Name</label>
+      <input type="text" value="{{ current_user.full_name }}" disabled>
+      <br><br>
+      <label>Email Address</label>
+      <input type="email" value="{{ current_user.email }}" disabled>
+      <br><br>
+      <button type="button" class="btn btn-primary" disabled>Update Profile (Coming Soon)</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

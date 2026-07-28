@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ platform_title }} Content · MarketCraft AI{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-shell-wide" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+    <div>
+      <span class="page-eyebrow primary">📱 {{ platform_title }} Content</span>
+      <h1>{{ campaign.campaign_name or campaign.product_name }}</h1>
+      <p>Your generated content for {{ platform_title }}</p>
+    </div>
+    <div>
+      <a href="{{ url_for('campaign_detail', campaign_id=campaign.id) }}" class="btn btn-outline">← Back to Kit</a>
+    </div>
+  </div>
+</div>
+
+<div class="page-shell-wide">
+  <div class="card kit-block">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+      <h2>{{ platform_emoji }} {{ platform_title }}</h2>
+      <div>
+        <button class="btn btn-ghost copy-btn" data-copy-target="platform-content-text">📋 Copy Content</button>
+        <a href="{{ platform_url }}" target="_blank" class="btn btn-primary">🚀 Go to {{ platform_title }}</a>
+      </div>
+    </div>
+    
+    <div style="background: var(--bg-color); padding: 20px; border-radius: 8px; font-size: 16px; line-height: 1.6;" id="platform-content-text">
+      {% if platform_key == 'instagram' %}
+        <p>{{ content_data.get('caption', '') }}</p>
+        <br>
+        <p>
+          {% for h in content_data.get('hashtags', []) %}{{ h }} {% endfor %}
+        </p>
+      {% elif platform_key == 'google_ads' %}
+        <strong>Headlines:</strong><br>
+        {% for h in content_data.get('headlines', []) %}
+          - {{ h }}<br>
+        {% endfor %}
+        <br>
+        <strong>Descriptions:</strong><br>
+        {% for d in content_data.get('descriptions', []) %}
+          - {{ d }}<br>
+        {% endfor %}
+      {% elif platform_key == 'youtube' %}
+        <strong>Title:</strong><br>
+        <p>{{ content_data.get('title', '') }}</p>
+        <br>
+        <strong>Description:</strong><br>
+        <p>{{ content_data.get('description', '') }}</p>
+        <br>
+        <strong>Tags:</strong><br>
+        <p>
+          {% for t in content_data.get('tags', []) %}
+            #{{ t.replace(' ', '') }} 
+          {% endfor %}
+        </p>
+      {% else %}
+        <p>{{ content_data.get('post', '') }}</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

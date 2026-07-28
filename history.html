@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}History · MarketCraft AI{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-shell-wide" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div>
+      <span class="page-eyebrow sky">🗂️ Archive</span>
+      <h1>Campaign History</h1>
+      <p>Every campaign you've imported, its status, and its validation score — all in one place.</p>
+    </div>
+    <a href="{{ url_for('upload_form') }}" class="btn btn-primary">New Campaign Kit ✨</a>
+  </div>
+</div>
+
+<div class="page-shell-wide">
+  {% if campaigns %}
+  <p class="hint" style="margin-bottom:12px;">{{ campaigns|length }} campaign{{ 's' if campaigns|length != 1 }} total</p>
+  <div class="card" style="padding:0; overflow:hidden;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Campaign</th>
+          <th>Objective</th>
+          <th>Status</th>
+          <th>Score</th>
+          <th>Imported</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in campaigns %}
+        <tr>
+          <td><strong>{{ c.campaign_name or c.product_name or 'Untitled' }}</strong></td>
+          <td>{{ c.campaign_info.get('campaign_objective', '—') }}</td>
+          <td><span class="status-pill {{ c.status }}">{{ c.status|capitalize }}</span></td>
+          <td>{{ c.brand_score or '—' }}</td>
+          <td>{{ c.created_at[:10] }}</td>
+          <td>
+            <a href="{{ url_for('campaign_detail', campaign_id=c.id) if c.status == 'ready' else url_for('review_campaign', campaign_id=c.id) }}"
+              class="btn btn-ghost btn-small">Open</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card empty-state">
+    <div class="emoji">📭</div>
+    <h3>No campaigns yet</h3>
+    <p>Import your first campaign report to generate a marketing kit.</p>
+    <a href="{{ url_for('upload_form') }}" class="btn btn-primary">Get Started</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Review Campaign Understanding · MarketCraft AI{% endblock %}
+{% block content %}
+{% set info = campaign.campaign_info %}
+<div class="page-header" style="text-align:center;">
+
+  <h1>AI Campaign Analysis</h1>
+  <p style="margin-left:auto;margin-right:auto;">The AI Agent has analyzed your input. Please review and refine the extracted details before moving to content generation.</p>
+</div>
+
+<div class="page-shell">
+  {% if info.get('_offline_mode') %}
+  <div class="flash flash-error" style="margin-bottom:20px;">⚠️ Running in offline fallback mode — add a valid
+    GEMINI_API_KEY in .env for AI-powered extraction.</div>
+  {% endif %}
+
+  {% if warnings %}
+  <div class="card" style="margin-bottom:20px; border-color: var(--amber);">
+    <h4 style="color: var(--amber); margin-bottom:8px;">⚠️ A few things to check</h4>
+    {% for w in warnings %}<p style="margin-bottom:4px;">{{ w }}</p>{% endfor %}
+  </div>
+  {% endif %}
+
+  <form method="POST" action="{{ url_for('generate_kit', campaign_id=campaign.id) }}">
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="margin-bottom:16px;">Campaign Overview</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="campaign_name">Campaign Name</label>
+          <input type="text" id="campaign_name" name="campaign_name" value="{{ info.get('campaign_name','') }}">
+        </div>
+        <div class="form-group">
+          <label for="product_name">Product / Service Name</label>
+          <input type="text" id="product_name" name="product_name" value="{{ info.get('product_name','') }}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="product_description">Product Description</label>
+        <textarea id="product_description" name="product_description" rows="3">{{ info.get('product_description','') }}</textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="category">Category</label>
+          <input type="text" id="category" name="category" value="{{ info.get('category','') }}">
+        </div>
+        <div class="form-group">
+          <label for="campaign_objective">Campaign Objective</label>
+          <input type="text" id="campaign_objective" name="campaign_objective" value="{{ info.get('campaign_objective','') }}">
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="margin-bottom:16px;">Audience &amp; Tone</h3>
+      <div class="form-group">
+        <label for="target_audience">Target Audience</label>
+        <input type="text" id="target_audience" name="target_audience" value="{{ info.get('target_audience','') }}">
+      </div>
+      <div class="form-group">
+        <label for="audience_demographics">Audience Demographics</label>
+        <input type="text" id="audience_demographics" name="audience_demographics" value="{{ info.get('audience_demographics','') }}">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="brand_tone">Brand Tone</label>
+          <input type="text" id="brand_tone" name="brand_tone" value="{{ info.get('brand_tone','') }}">
+        </div>
+        <div class="form-group">
+          <label for="budget">Budget</label>
+          <input type="text" id="budget" name="budget" value="{{ info.get('budget','') }}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="key_message">Key Message</label>
+        <input type="text" id="key_message" name="key_message" value="{{ info.get('key_message','') }}">
+      </div>
+      <div class="form-group">
+        <label for="keywords">Keywords (comma-separated)</label>
+        <input type="text" id="keywords" name="keywords" value="{{ info.get('keywords', [])|join(', ') }}">
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="margin-bottom:6px;">Target Platforms</h3>
+      <p style="font-size:13px; margin-bottom:14px;">Pick one platform for focused content, or several for a multi-channel kit — only the platforms you select here will be generated.</p>
+      <div class="checkbox-pill-group" id="platform-pill-group">
+        {% set all_platforms = ['Instagram', 'Facebook', 'LinkedIn', 'Twitter/X', 'Google Ads', 'YouTube'] %}
+        {% for p in all_platforms %}
+        <label class="checkbox-pill">
+          <input type="checkbox" name="platforms" value="{{ p }}" {% if p in info.get('recommended_platforms', []) %}checked{% endif %}>
+          <span>{{ p }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      <p class="hint" id="platform-hint" style="display:none; color:var(--coral);">Select at least one platform to continue.</p>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-block" id="generate-kit-btn">Generate Full Marketing Kit ✨</button>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("generate-kit-btn")?.closest("form");
+    const group = document.getElementById("platform-pill-group");
+    const hint = document.getElementById("platform-hint");
+    if (!form || !group) return;
+    form.addEventListener("submit", (e) => {
+      const checked = group.querySelectorAll("input[type=checkbox]:checked");
+      if (checked.length === 0) {
+        e.preventDefault();
+        hint.style.display = "block";
+        group.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    });
+    group.addEventListener("change", () => { hint.style.display = "none"; });
+  });
+</script>
+{% endblock %}

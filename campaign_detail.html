@@ -1,0 +1,669 @@
+{% extends "base.html" %}
+{% block title %}{{ campaign.campaign_name or campaign.product_name }} · Marketing Kit{% endblock %}
+{% block content %}
+{% set info = campaign.campaign_info %}
+{% set c = campaign.content %}
+{% set sm = c.get('social_media', {}) %}
+{% set mc = c.get('marketing_content', {}) %}
+{% set seo = c.get('seo', {}) %}
+{% set cd = c.get('creative_design', {}) %}
+{% set val = c.get('validation', {}) %}
+
+<div class="page-header">
+  <div class="page-shell-wide" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+    <div>
+
+      <h1>{{ info.get('campaign_name') or campaign.product_name }}</h1>
+      <p>{{ info.get('product_name') }} · {{ info.get('campaign_objective') }} · {{ info.get('brand_tone') }}</p>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <a href="{{ url_for('export_kit', campaign_id=campaign.id, fmt='pdf') }}" class="btn btn-ghost btn-small">⬇ PDF</a>
+      <a href="{{ url_for('export_kit', campaign_id=campaign.id, fmt='docx') }}" class="btn btn-ghost btn-small">⬇ DOCX</a>
+      <a href="{{ url_for('export_kit', campaign_id=campaign.id, fmt='txt') }}" class="btn btn-ghost btn-small">⬇ TXT</a>
+      <form method="POST" action="{{ url_for('delete_campaign', campaign_id=campaign.id) }}"
+        onsubmit="return confirm('Delete this campaign and its marketing kit?');">
+        <button type="submit" class="btn btn-outline btn-small">🗑 Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="page-shell-wide">
+
+  {% if c.get('_offline_mode') %}
+  <div class="flash flash-error" style="margin-bottom:20px;">⚠️ This kit was generated in offline fallback mode —
+    add a valid GEMINI_API_KEY in .env for fully tailored, higher-fidelity content.</div>
+  {% endif %}
+
+  <!-- Content Validation & Preview Module -->
+  <div class="score-ring-row">
+    {% set overall = val.get('overall_score', 0) %}
+    <div class="card score-card {{ 'good' if overall >= 75 else ('ok' if overall >= 50 else 'bad') }}">
+      <div class="score-num">{{ overall }}</div>
+      <div class="score-label">Overall Score</div>
+    </div>
+    <div class="card score-card {{ 'good' if val.get('consistency_score',0) >= 75 else 'ok' }}">
+      <div class="score-num">{{ val.get('consistency_score', 0) }}</div>
+      <div class="score-label">Consistency</div>
+    </div>
+    <div class="card score-card {{ 'good' if val.get('brand_alignment_score',0) >= 75 else 'ok' }}">
+      <div class="score-num">{{ val.get('brand_alignment_score', 0) }}</div>
+      <div class="score-label">Brand Alignment</div>
+    </div>
+    <div class="card score-card {{ 'good' if val.get('platform_compatibility_score',0) >= 75 else 'ok' }}">
+      <div class="score-num">{{ val.get('platform_compatibility_score', 0) }}</div>
+      <div class="score-label">Platform Fit</div>
+    </div>
+  </div>
+  {% if val.get('notes') %}
+  <div class="card kit-block">
+    <h4>Validation Notes</h4>
+    <ul style="margin:0; padding-left:18px; color:var(--muted);">
+      {% for n in val.get('notes', []) %}<li>{{ n }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <style>
+    /* Innovative UI: Brand Colors on Hover */
+    .platform-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .platform-btn-instagram:hover { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: white !important; border-color: transparent; box-shadow: 0 4px 12px rgba(220, 39, 67, 0.4); transform: translateY(-2px) scale(1.02); }
+    .platform-btn-facebook:hover { background: #1877F2; color: white !important; border-color: transparent; box-shadow: 0 4px 12px rgba(24, 119, 242, 0.4); transform: translateY(-2px) scale(1.02); }
+    .platform-btn-linkedin:hover { background: #0A66C2; color: white !important; border-color: transparent; box-shadow: 0 4px 12px rgba(10, 102, 194, 0.4); transform: translateY(-2px) scale(1.02); }
+    .platform-btn-twitter:hover { background: #1DA1F2; color: white !important; border-color: transparent; box-shadow: 0 4px 12px rgba(29, 161, 242, 0.4); transform: translateY(-2px) scale(1.02); }
+    .platform-btn-google-ads:hover { background: #4285F4; color: white !important; border-color: transparent; box-shadow: 0 4px 12px rgba(66, 133, 244, 0.4); transform: translateY(-2px) scale(1.02); }
+    .platform-btn-youtube:hover { background: #FF0000; color: white !important; border-color: transparent; box-shadow: 0 4px 12px rgba(255, 0, 0, 0.4); transform: translateY(-2px) scale(1.02); }
+    
+    /* Permanent Brand Colors for Icons */
+    .icon-instagram { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .icon-facebook { color: #1877F2; }
+    .icon-linkedin { color: #0A66C2; }
+    .icon-twitter { color: #1DA1F2; }
+    .icon-google-ads { color: #4285F4; }
+    .icon-youtube { color: #FF0000; }
+    
+    /* Ensure icon turns white when button is hovered */
+    .platform-btn:hover [class*="icon-"] { -webkit-text-fill-color: white !important; color: white !important; background: none !important; }
+    
+    /* Animated Agent Emojis */
+    @keyframes float-magic-icon {
+      0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+      50% { transform: translateY(-3px) rotate(10deg) scale(1.15); }
+    }
+    .magic-icon { display: inline-block; animation: float-magic-icon 3s ease-in-out infinite; }
+  </style>
+
+  <!-- Tabs for each content section -->
+  <div class="tabbar">
+    <button data-tab-btn="social" class="active"><span class="magic-icon">📱</span> Social Media</button>
+    <button data-tab-btn="copy"><span class="magic-icon">✍️</span> Marketing Copy</button>
+    <button data-tab-btn="seo"><span class="magic-icon">🔍</span> SEO</button>
+    <button data-tab-btn="creative"><span class="magic-icon">🎨</span> Creative &amp; Images</button>
+    <button data-tab-btn="video"><span class="magic-icon">🎬</span> Video Script</button>
+  </div>
+
+  <!-- Social Media Content Generation -->
+  <div data-tab-panel="social" class="tab-panel active">
+    {% set selected_platforms = info.get('recommended_platforms', []) %}
+    {% if selected_platforms %}
+    <p style="margin-bottom:16px; font-size:13px;">
+      Generated for: {% for p in selected_platforms %}<span class="chip primary" style="margin-right:4px;">{{ p }}</span>{% endfor %}
+    </p>
+    {% endif %}
+    <div class="grid grid-2">
+      {% if sm.get('instagram') %}
+      <div class="card kit-block" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h4><i class="fa-brands fa-instagram icon-instagram"></i> Instagram</h4>
+          <p style="font-size:13px; color:var(--muted);">View generated Instagram post & hashtags.</p>
+        </div>
+        <a href="{{ url_for('platform_content', campaign_id=campaign.id, platform_key='instagram') }}" class="btn btn-outline">View Content</a>
+      </div>
+      {% endif %}
+      {% if sm.get('facebook') %}
+      <div class="card kit-block" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h4><i class="fa-brands fa-facebook-f icon-facebook"></i> Facebook</h4>
+          <p style="font-size:13px; color:var(--muted);">View generated Facebook post.</p>
+        </div>
+        <a href="{{ url_for('platform_content', campaign_id=campaign.id, platform_key='facebook') }}" class="btn btn-outline">View Content</a>
+      </div>
+      {% endif %}
+      {% if sm.get('linkedin') %}
+      <div class="card kit-block" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h4><i class="fa-brands fa-linkedin-in icon-linkedin"></i> LinkedIn</h4>
+          <p style="font-size:13px; color:var(--muted);">View generated LinkedIn post.</p>
+        </div>
+        <a href="{{ url_for('platform_content', campaign_id=campaign.id, platform_key='linkedin') }}" class="btn btn-outline">View Content</a>
+      </div>
+      {% endif %}
+      {% if sm.get('twitter_x') %}
+      <div class="card kit-block" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h4><i class="fa-brands fa-twitter icon-twitter"></i> Twitter / X</h4>
+          <p style="font-size:13px; color:var(--muted);">View generated Twitter post.</p>
+        </div>
+        <a href="{{ url_for('platform_content', campaign_id=campaign.id, platform_key='twitter_x') }}" class="btn btn-outline">View Content</a>
+      </div>
+      {% endif %}
+      {% if sm.get('google_ads') %}
+      <div class="card kit-block" style="grid-column: 1 / -1; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h4><i class="fa-solid fa-rectangle-ad icon-google-ads"></i> Google Ads</h4>
+          <p style="font-size:13px; color:var(--muted);">View generated Google Ads headlines and descriptions.</p>
+        </div>
+        <a href="{{ url_for('platform_content', campaign_id=campaign.id, platform_key='google_ads') }}" class="btn btn-outline">View Content</a>
+      </div>
+      {% endif %}
+      {% if sm.get('youtube') %}
+      <div class="card kit-block" style="grid-column: 1 / -1; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h4><i class="fa-brands fa-youtube icon-youtube"></i> YouTube</h4>
+          <p style="font-size:13px; color:var(--muted);">View generated YouTube title, description, and tags.</p>
+        </div>
+        <a href="{{ url_for('platform_content', campaign_id=campaign.id, platform_key='youtube') }}" class="btn btn-outline">View Content</a>
+      </div>
+      {% endif %}
+      {% if not sm %}
+      <div class="empty-state" style="grid-column: 1 / -1;">
+        <div class="emoji">📭</div>
+        <p>No platforms were selected for this kit.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Marketing Content Generation Agent -->
+  {% set platforms = [
+    ('Instagram', 'https://instagram.com', '<i class="fa-brands fa-instagram icon-instagram"></i>', 'instagram'),
+    ('Facebook', 'https://facebook.com', '<i class="fa-brands fa-facebook-f icon-facebook"></i>', 'facebook'),
+    ('LinkedIn', 'https://linkedin.com', '<i class="fa-brands fa-linkedin-in icon-linkedin"></i>', 'linkedin'),
+    ('Twitter', 'https://twitter.com', '<i class="fa-brands fa-twitter icon-twitter"></i>', 'twitter'),
+    ('Google Ads', 'https://ads.google.com', '<i class="fa-solid fa-rectangle-ad icon-google-ads"></i>', 'google-ads'),
+    ('YouTube', 'https://youtube.com', '<i class="fa-brands fa-youtube icon-youtube"></i>', 'youtube')
+  ] %}
+
+  <!-- Marketing Copy Agent -->
+  <div data-tab-panel="copy" class="tab-panel">
+    <div class="grid grid-2">
+      <div class="card kit-block" style="position: relative;">
+        <button class="btn btn-ghost btn-small copy-btn" style="position: absolute; right: 16px; top: 16px;" data-copy-target="copy-headlines">Copy</button>
+        <h4>Headlines</h4>
+        <div id="copy-headlines">
+        {% for h in mc.get('headlines', []) %}<p style="margin-bottom:4px;">• {{ h }}</p>{% endfor %}
+        </div>
+      </div>
+      <div class="card kit-block" style="position: relative;">
+        <button class="btn btn-ghost btn-small copy-btn" style="position: absolute; right: 16px; top: 16px;" data-copy-target="copy-taglines">Copy</button>
+        <h4>Taglines</h4>
+        <div id="copy-taglines">
+        {% for t in mc.get('taglines', []) %}<p style="margin-bottom:4px;">• {{ t }}</p>{% endfor %}
+        </div>
+      </div>
+      <div class="card kit-block" style="position: relative;">
+        <button class="btn btn-ghost btn-small copy-btn" style="position: absolute; right: 16px; top: 16px;" data-copy-target="copy-ctas">Copy</button>
+        <h4>Calls to Action</h4>
+        <div class="chip-row" id="copy-ctas">
+          {% for cta in mc.get('ctas', []) %}<span class="chip rose" style="margin-right: 4px;">{{ cta }}</span>{% endfor %}
+        </div>
+      </div>
+      <div class="card kit-block" style="position: relative;">
+        <button class="btn btn-ghost btn-small copy-btn" style="position: absolute; right: 16px; top: 16px;" data-copy-target="copy-short-desc">Copy</button>
+        <h4>Short Description</h4>
+        <p id="copy-short-desc">{{ mc.get('short_description', '') }}</p>
+      </div>
+      <div class="card kit-block" style="grid-column: 1 / -1; position: relative;">
+        <button class="btn btn-ghost btn-small copy-btn" style="position: absolute; right: 16px; top: 16px;" data-copy-target="long-desc">Copy</button>
+        <h4>Long Description</h4>
+        <p id="long-desc" style="margin-bottom: 24px;">{{ mc.get('long_description', '') }}</p>
+        
+        <div style="padding-top: 16px; border-top: 1px solid var(--border-color);">
+          <strong style="font-size: 13px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 12px;">Publish Copy To:</strong>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            {% for p_name, p_url, p_emoji, p_class in platforms %}
+            <a href="{{ p_url }}" target="_blank" class="btn btn-outline btn-small platform-btn platform-btn-{{ p_class }}" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 6px;">
+                <span style="font-size: 16px;">{{ p_emoji | safe }}</span> {{ p_name }}
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEO Optimization Agent -->
+  <div data-tab-panel="seo" class="tab-panel">
+    <div class="grid grid-2">
+      <div class="card kit-block" style="position: relative;">
+        <button class="btn btn-ghost btn-small copy-btn" style="position: absolute; right: 16px; top: 16px;" data-copy-target="copy-seo-keywords">Copy</button>
+        <h4>SEO Keywords</h4>
+        <div class="chip-row" id="copy-seo-keywords">
+          {% for k in seo.get('keywords', []) %}<span class="chip" style="margin-right: 4px;">{{ k }}</span>{% endfor %}
+        </div>
+      </div>
+      <div class="card kit-block" style="position: relative;">
+        <button class="btn btn-ghost btn-small copy-btn" style="position: absolute; right: 16px; top: 16px;" data-copy-target="copy-hashtags">Copy</button>
+        <h4>Hashtags</h4>
+        <div class="chip-row" id="copy-hashtags">
+          {% for h in seo.get('hashtags', []) %}<span class="chip primary">{{ h }}</span>{% endfor %}
+        </div>
+      </div>
+      <div class="card kit-block" style="position: relative;">
+        <button class="btn btn-ghost btn-small copy-btn" style="position: absolute; right: 16px; top: 16px;" data-copy-target="copy-meta-title">Copy</button>
+        <h4>Meta Title</h4>
+        <p id="copy-meta-title">{{ seo.get('meta_title', '') }}</p>
+      </div>
+      <div class="card kit-block" style="position: relative;">
+        <button class="btn btn-ghost btn-small copy-btn" style="position: absolute; right: 16px; top: 16px;" data-copy-target="copy-meta-desc">Copy</button>
+        <h4>Meta Description</h4>
+        <p id="copy-meta-desc">{{ seo.get('meta_description', '') }}</p>
+      </div>
+      
+      <div class="card kit-block" style="grid-column: 1 / -1;">
+        <div>
+          <strong style="font-size: 13px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 12px;">Publish Metadata To:</strong>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            {% for p_name, p_url, p_emoji, p_class in platforms %}
+            <a href="{{ p_url }}" target="_blank" class="btn btn-outline btn-small platform-btn platform-btn-{{ p_class }}" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 6px;">
+                <span style="font-size: 16px;">{{ p_emoji | safe }}</span> {{ p_name }}
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Creative Design Generation Agent -->
+  <div data-tab-panel="creative" class="tab-panel">
+    <div class="card kit-block">
+      <h4>AI-Generated Marketing Images</h4>
+      <p style="margin-bottom:14px;">Click "Generate" to render each creative with the Gemini image model.</p>
+      <div class="image-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px;">
+        {% set formats = [
+          ('Square Post (1:1)', 'post', 'High-converting square image perfect for Instagram and Facebook feeds.'),
+          ('Banner Landscape (16:9)', 'banner', 'Wide landscape image for LinkedIn, Twitter, and Website Headers.'),
+          ('Story Portrait (9:16)', 'story', 'Vertical format designed for Instagram Stories, Reels, and TikTok.'),
+          ('Ad Creative (4:3)', 'ad', 'Commercial-style graphic designed for Google Ads with high click-through potential.')
+        ] %}
+
+        {% for f_title, f_key, f_desc in formats %}
+        <div class="image-card" style="display:flex; flex-direction:column; border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+          <div id="img-slot-{{ f_key }}" class="image-placeholder" style="aspect-ratio: 4/3; background: #f8f9fa; display: flex; align-items: center; justify-content: center; color: var(--muted); border-bottom: 1px solid var(--border-color); width: 100%; height: auto; overflow: hidden;">
+            🖼️ Not generated yet
+          </div>
+          <div class="image-card-body" style="padding: 20px; flex-grow:1; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <strong style="font-size:16px; display:block; margin-bottom:6px; color: var(--text-dark);">{{ f_title }}</strong>
+              <p style="font-size:13px; color:var(--muted); margin-bottom: 20px; line-height: 1.5;">{{ f_desc }}</p>
+            </div>
+            
+            <div style="display:flex; flex-direction:column; gap:16px;">
+              <button class="btn btn-primary btn-small" style="width:100%; border-radius: 8px; padding: 10px;"
+                data-generate-image="img-slot-{{ f_key }}"
+                data-actions-target="actions-{{ f_key }}"
+                data-campaign-id="{{ campaign.id }}"
+                data-prompt="Marketing image for {{ info.get('product_name') or campaign.product_name }}. Format: {{ f_title }}. {{ f_desc }}. Tone: {{ info.get('brand_tone', 'Professional') }}. High quality commercial photography.">
+                Generate Image ✨
+              </button>
+              
+              <div style="display:none; flex-direction:column; gap: 12px;" id="actions-{{ f_key }}">
+                <a href="#" target="_blank" class="btn btn-outline btn-small dl-btn" style="width: 100%; text-align:center; border-radius: 6px;">📥 Download Asset</a>
+                
+                <div style="margin-top: 4px; padding-top: 12px; border-top: 1px solid #eee;">
+                  <strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); display: block; margin-bottom: 10px;">Post Directly To:</strong>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                    {% for p_name, p_url, p_emoji, p_class in platforms %}
+                    <a href="{{ p_url }}" target="_blank" title="Post to {{ p_name }}" class="platform-btn-{{ p_class }}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; padding: 8px 4px; background: #f8f9fa; border-radius: 6px; color: var(--text-dark); text-decoration: none; border: 1px solid #e9ecef; transition: all 0.3s;" onmouseover="this.style.background='#eef0f2'; this.style.borderColor='#dde0e3';" onmouseout="this.style.background='#f8f9fa'; this.style.borderColor='#e9ecef';">
+                        <span style="font-size: 16px;">{{ p_emoji | safe }}</span>
+                        <span style="font-weight: 500;">{{ p_name }}</span>
+                    </a>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Video Advertisement Script -->
+  <div data-tab-panel="video" class="tab-panel">
+    <div class="card kit-block">
+      <h4>Video Advertisement Script</h4>
+      {% for scene in cd.get('video_ad_script', {}).get('scenes', []) %}
+      <div class="scene-row">
+        <div class="scene-num">{{ scene.get('scene') }}</div>
+        <div>
+          <strong>{{ scene.get('visual', '') }}</strong>
+          <p style="margin:4px 0 0;">🎙️ "{{ scene.get('voiceover', '') }}" — {{ scene.get('duration_sec', '') }}s</p>
+        </div>
+      </div>
+      {% endfor %}
+      
+      <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+        <h5 style="font-size: 16px; margin-bottom: 8px;">Generate & Publish Video (4s - 5s)</h5>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Instantly generate a short video ad based on the script and directly post it to your platforms.</p>
+        
+        <div style="display:flex; flex-wrap:wrap; gap: 12px; margin-bottom: 24px;">
+            <button id="generate-video-btn" class="btn btn-primary" onclick="generateVideo()">
+                🎥 Generate Video
+            </button>
+            <a id="download-video-btn" href="#" class="btn btn-outline" style="display:none;" download="campaign_video.mp4" target="_blank">
+                📥 Download MP4
+            </a>
+        </div>
+
+        <div id="video-container" style="display:none; margin-bottom: 24px; border-radius: 12px; overflow: visible; border: 1px solid var(--border-color); background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.1); position: relative; height: 350px; flex-direction: column;">
+            <!-- Simulated Video Frame -->
+            <div id="simulated-video-frame" style="flex-grow: 1; position: relative; overflow: hidden; border-radius: 12px 12px 0 0;">
+                <div id="video-layers" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;">
+                    <!-- Preloaded images will go here -->
+                </div>
+                
+                <!-- Video Captions & Audio Wave -->
+                <div style="position: absolute; bottom: 10px; left: 0; width: 100%; padding: 0 20px; text-align: center; color: white; display: flex; flex-direction: column; align-items: center; pointer-events: none;">
+                    <div id="audio-wave" style="display: flex; gap: 3px; height: 15px; align-items: flex-end; justify-content: center; margin-bottom: 8px;">
+                        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                    </div>
+                    <p id="video-captions" style="margin: 0; font-size: 16px; font-weight: 500; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); background: rgba(0,0,0,0.4); padding: 4px 12px; border-radius: 6px;">...</p>
+                </div>
+            </div>
+            
+            <!-- Custom HTML5-like Video Controls -->
+            <div style="background: #1e1e1e; padding: 10px 16px; display: flex; align-items: center; gap: 12px; color: #fff; border-radius: 0 0 12px 12px;">
+                <button id="v-play-btn" onclick="togglePlay()" style="background: none; border: none; color: white; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; padding: 4px;">
+                    ⏸
+                </button>
+                <div style="font-size: 12px; font-family: monospace;" id="v-time">0:00 / 0:10</div>
+                
+                <div style="flex-grow: 1; height: 4px; background: #444; border-radius: 2px; position: relative; overflow: hidden;">
+                    <div id="v-progress" style="position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: var(--primary);"></div>
+                </div>
+                
+                <div style="position: relative;">
+                    <button onclick="toggleMenu()" style="background: none; border: none; color: white; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; padding: 4px;">
+                        ⋮
+                    </button>
+                    <!-- 3-Dots Menu -->
+                    <div id="v-menu" style="display: none; position: absolute; bottom: 30px; right: 0; background: #2a2a2a; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); padding: 6px 0; min-width: 150px; z-index: 10;">
+                        <button onclick="alert('Playback speed options...'); toggleMenu();" style="width: 100%; text-align: left; background: none; border: none; color: white; padding: 8px 16px; cursor: pointer; font-size: 13px;">⏱ Playback Speed</button>
+                        <button onclick="alert('Downloading MP4...'); toggleMenu();" style="width: 100%; text-align: left; background: none; border: none; color: white; padding: 8px 16px; cursor: pointer; font-size: 13px;">📥 Download</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="video-metadata" style="display: none;" data-product-name="{{ info.get('product_name', 'product') | escape }}"></div>
+        <script id="video-scenes-data" type="application/json">
+            {{ cd.get('video_ad_script', {}).get('scenes', []) | tojson }}
+        </script>
+        <script id="creative-images-data" type="application/json">
+            {{ cd.get('social_media', {}).get('images', []) | tojson }}
+        </script>
+        <script>
+            let videoInterval;
+            let progressInterval;
+            let sceneTimeouts = [];
+            let currentScene = 0;
+            let isPlaying = true;
+            let elapsedTime = 0;
+            
+            const metaDiv = document.getElementById('video-metadata');
+            const productName = metaDiv ? metaDiv.getAttribute('data-product-name') : 'product';
+            
+            let rawScenes = [];
+            let creativeUrls = [];
+            try {
+                const scenesEl = document.getElementById('video-scenes-data');
+                if (scenesEl && scenesEl.textContent.trim()) {
+                    rawScenes = JSON.parse(scenesEl.textContent);
+                }
+                const crEl = document.getElementById('creative-images-data');
+                if (crEl && crEl.textContent.trim()) {
+                    const crImgs = JSON.parse(crEl.textContent);
+                    creativeUrls = crImgs.map(img => `/static/generated/${img}`);
+                }
+            } catch (e) {
+                console.error("Failed to parse JSON data", e);
+            }
+            
+            const scenesData = rawScenes.map(scene => ({
+                voiceover: scene.voiceover || '',
+                visual: scene.visual || ('A cinematic shot of ' + productName)
+            }));
+            
+            if (scenesData.length === 0) {
+                scenesData.push({voiceover: "Introducing " + productName, visual: "Hero shot of " + productName});
+                scenesData.push({voiceover: "The perfect solution for your needs.", visual: "Happy person using " + productName});
+            }
+            
+            const totalDuration = 10000; // Force exactly 10s
+            const sceneDuration = totalDuration / scenesData.length;
+            
+            function generateVideo() {
+                const btn = document.getElementById('generate-video-btn');
+                const container = document.getElementById('video-container');
+                const dlBtn = document.getElementById('download-video-btn');
+                const layers = document.getElementById('video-layers');
+                
+                btn.innerHTML = '<span style="display:inline-block; animation: spin 1s linear infinite;">⏳</span> Generating HD Video...';
+                btn.disabled = true;
+                container.style.display = 'none';
+                dlBtn.style.display = 'none';
+                
+                // Preload all scene images to prevent blank screens during playback
+                layers.innerHTML = '';
+                let loadedCount = 0;
+                
+                for (let i = 0; i < scenesData.length; i++) {
+                    let img = new Image();
+                    img.id = 'scene-img-' + i;
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.objectFit = 'cover';
+                    img.style.position = 'absolute';
+                    img.style.top = '0';
+                    img.style.left = '0';
+                    img.style.opacity = '0'; // Hide initially
+                    img.style.transition = 'opacity 0.5s ease-in-out';
+                    
+                    // Prioritize actual creative images from the campaign. Fallback to loremflickr.
+                    if (creativeUrls.length > 0) {
+                        img.src = creativeUrls[i % creativeUrls.length];
+                    } else {
+                        let fallbackKw = productName.split(' ').pop(); // last word is usually the subject
+                        img.src = `https://loremflickr.com/800/450/${encodeURIComponent(fallbackKw)}?random=${i}`;
+                    }
+                    
+                    img.onload = () => { loadedCount++; };
+                    img.onerror = function() {
+                        this.onerror = null;
+                        this.src = `https://loremflickr.com/800/450/product?random=${i}`;
+                        loadedCount++;
+                    };
+                    
+                    layers.appendChild(img);
+                }
+                
+                // Wait for images to load (max 2 seconds)
+                let waitTime = 0;
+                let checkInterval = setInterval(() => {
+                    waitTime += 500;
+                    if (loadedCount >= scenesData.length || waitTime >= 2000) {
+                        clearInterval(checkInterval);
+                        btn.innerHTML = '✅ Video Generated';
+                        btn.disabled = false;
+                        container.style.display = 'flex';
+                        dlBtn.style.display = 'inline-flex';
+                        
+                        startVideo();
+                    }
+                }, 500);
+            }
+            
+            function startVideo() {
+                currentScene = 0;
+                elapsedTime = 0;
+                isPlaying = true;
+                document.getElementById('v-play-btn').innerText = '⏸';
+                
+                updateVisuals();
+                speakScript();
+                
+                // Progress Bar, Time, and Scene updater
+                clearInterval(progressInterval);
+                progressInterval = setInterval(() => {
+                    if(!isPlaying) return;
+                    elapsedTime += 100;
+                    
+                    // Update Progress Bar
+                    const percent = Math.min((elapsedTime / totalDuration) * 100, 100);
+                    document.getElementById('v-progress').style.width = percent + '%';
+                    
+                    // Update Time
+                    let secs = Math.floor(elapsedTime / 1000);
+                    document.getElementById('v-time').innerText = `0:${secs < 10 ? '0'+secs : secs} / 0:10`;
+                    
+                    // Check if we need to advance to the next scene
+                    let expectedScene = Math.floor(elapsedTime / sceneDuration);
+                    if (expectedScene > currentScene && expectedScene < scenesData.length) {
+                        currentScene = expectedScene;
+                        updateVisuals();
+                    }
+                    
+                    // End of video
+                    if (elapsedTime >= totalDuration) {
+                        clearInterval(progressInterval);
+                        document.getElementById('v-play-btn').innerText = '▶';
+                        isPlaying = false;
+                        document.getElementById('audio-wave').style.display = 'none';
+                        // Pause animation on current image
+                        let currentImg = document.getElementById('scene-img-' + currentScene);
+                        if(currentImg) currentImg.style.animationPlayState = 'paused';
+                        if ('speechSynthesis' in window) window.speechSynthesis.cancel(); // Force stop audio
+                    }
+                }, 100);
+            }
+            
+            function updateVisuals() {
+                // Hide all images
+                for(let i=0; i<scenesData.length; i++) {
+                    let img = document.getElementById('scene-img-' + i);
+                    if(img) {
+                        if (i === currentScene) {
+                            img.style.opacity = '1';
+                            img.style.animation = 'none';
+                            img.offsetHeight; // reflow
+                            img.style.animation = `kenburns ${sceneDuration / 1000}s ease-out forwards`;
+                            if(!isPlaying) img.style.animationPlayState = 'paused';
+                        } else {
+                            img.style.opacity = '0';
+                        }
+                    }
+                }
+            }
+            
+            function speakScript() {
+                const captions = document.getElementById('video-captions');
+                const fullScript = scenesData.map(s => s.voiceover).join(". ");
+                document.getElementById('audio-wave').style.display = 'flex';
+                
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(fullScript);
+                    utterance.rate = 1.0;
+                    
+                    utterance.onboundary = function(event) {
+                        if(event.name === 'word') {
+                            const words = fullScript.substring(event.charIndex).split(' ');
+                            captions.innerText = words.slice(0, 6).join(' ') + "...";
+                        }
+                    };
+                    
+                    utterance.onend = function() {
+                        captions.innerText = "";
+                    };
+                    
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    captions.innerText = scenesData[0].voiceover;
+                }
+            }
+            
+            function togglePlay() {
+                const btn = document.getElementById('v-play-btn');
+                isPlaying = !isPlaying;
+                
+                if(isPlaying) {
+                    btn.innerText = '⏸';
+                    if (elapsedTime >= totalDuration) {
+                        startVideo();
+                    } else {
+                        if ('speechSynthesis' in window) window.speechSynthesis.resume();
+                        document.getElementById('audio-wave').style.display = 'flex';
+                        let currentImg = document.getElementById('scene-img-' + currentScene);
+                        if(currentImg) currentImg.style.animationPlayState = 'running';
+                    }
+                } else {
+                    btn.innerText = '▶';
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.pause();
+                        // Fallback if browser doesn't pause immediately
+                        setTimeout(() => {
+                            if(!isPlaying) window.speechSynthesis.pause();
+                        }, 50);
+                    }
+                    document.getElementById('audio-wave').style.display = 'none';
+                    let currentImg = document.getElementById('scene-img-' + currentScene);
+                    if(currentImg) currentImg.style.animationPlayState = 'paused';
+                }
+            }
+            
+            function toggleMenu() {
+                const menu = document.getElementById('v-menu');
+                menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+            }
+        </script>
+        
+        <style>
+            @keyframes spin { 100% { transform: rotate(360deg); } }
+            @keyframes kenburns {
+                0% { transform: scale(1) translate(0, 0); }
+                100% { transform: scale(1.15) translate(-2%, 2%); }
+            }
+            #audio-wave .bar {
+                width: 4px;
+                background: white;
+                animation: wave 1s infinite ease-in-out;
+                border-radius: 2px;
+            }
+            #audio-wave .bar:nth-child(1) { height: 60%; animation-delay: -0.2s; }
+            #audio-wave .bar:nth-child(2) { height: 100%; animation-delay: -0.4s; }
+            #audio-wave .bar:nth-child(3) { height: 40%; animation-delay: -0.6s; }
+            #audio-wave .bar:nth-child(4) { height: 80%; animation-delay: -0.8s; }
+            
+            @keyframes wave {
+                0%, 100% { transform: scaleY(0.5); }
+                50% { transform: scaleY(1); }
+            }
+        </style>
+
+        <h5 style="font-size: 14px; margin-bottom: 12px;">Directly Publish to Platforms</h5>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+          {% for p_name, p_url, p_emoji, p_class in platforms %}
+            <a href="{{ p_url }}" target="_blank" class="btn btn-outline btn-small platform-btn platform-btn-{{ p_class }}">
+                <span style="margin-right:6px;">{{ p_emoji | safe }}</span> {{ p_name }}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

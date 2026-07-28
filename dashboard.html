@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · MarketCraft AI{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-shell-wide" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div>
+      <span class="page-eyebrow violet">📊 Overview</span>
+      <h1>Hello {{ current_user.full_name.split(' ')[0] if current_user else 'User' }}, Welcome to your Dashboard!</h1>
+      <p>Your campaign pipeline at a glance — imports, ready kits, and average validation quality.</p>
+    </div>
+    <a href="{{ url_for('upload_form') }}" class="btn btn-primary">New Campaign Kit ✨</a>
+  </div>
+</div>
+
+<div class="page-shell-wide">
+  <div class="grid grid-3" style="margin-bottom:32px;">
+    <div class="card stat-card">
+      <div class="stat-icon violet" style="background: var(--primary-soft);">📥</div>
+      <div class="stat-body">
+        <div class="stat-num">{{ stats.total_campaigns }}</div>
+        <div class="stat-label">Campaigns Imported</div>
+      </div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-icon" style="background: var(--sage-soft);">✅</div>
+      <div class="stat-body">
+        <div class="stat-num">{{ stats.ready_kits }}</div>
+        <div class="stat-label">Marketing Kits Ready</div>
+      </div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-icon" style="background: var(--amber-soft);">⭐</div>
+      <div class="stat-body">
+        <div class="stat-num">{{ stats.avg_brand_score }}</div>
+        <div class="stat-label">Avg. Validation Score</div>
+      </div>
+    </div>
+  </div>
+
+  <h2 style="font-size:20px; margin-bottom:14px;">Recent campaigns</h2>
+  {% if stats.recent %}
+  <div class="grid grid-3">
+    {% for c in stats.recent %}
+    <a href="{{ url_for('campaign_detail', campaign_id=c.id) if c.status == 'ready' else url_for('review_campaign', campaign_id=c.id) }}" class="card feature-card">
+      <span class="status-pill {{ c.status }}">{{ c.status|capitalize }}</span>
+      <h3 style="margin-top:10px;">{{ c.campaign_name or c.product_name or 'Untitled Campaign' }}</h3>
+      <p>{{ c.campaign_info.get('campaign_objective', '') }} · {{ c.campaign_info.get('brand_tone', '') }}</p>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card empty-state">
+    <div class="emoji">📭</div>
+    <h3>No campaigns yet</h3>
+    <p>Import your first campaign report to generate a marketing kit.</p>
+    <a href="{{ url_for('upload_form') }}" class="btn btn-primary">Get Started</a>
+  </div>
+  {% endif %}
+
+  <!-- Graphs Section -->
+  <div class="grid grid-2" style="margin-top: 32px;">
+    <div class="card kit-block">
+      <h3>📈 Engagement/Intent Forecast</h3>
+      <canvas id="intentChart" style="max-height: 250px;"></canvas>
+    </div>
+    <div class="card kit-block">
+      <h3>💬 Sentiment Analysis</h3>
+      <canvas id="sentimentChart" style="max-height: 250px;"></canvas>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // Intent Bar Chart
+    const ctxIntent = document.getElementById('intentChart').getContext('2d');
+    new Chart(ctxIntent, {
+        type: 'bar',
+        data: {
+            labels: ['Awareness', 'Consideration', 'Conversion', 'Loyalty'],
+            datasets: [{
+                label: 'Forecasted Intent (%)',
+                data: [85, 70, 60, 45],
+                backgroundColor: 'rgba(124, 109, 242, 0.6)',
+                borderColor: 'rgba(124, 109, 242, 1)',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true, max: 100 }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    // Sentiment Doughnut Chart
+    const ctxSentiment = document.getElementById('sentimentChart').getContext('2d');
+    new Chart(ctxSentiment, {
+        type: 'doughnut',
+        data: {
+            labels: ['Positive', 'Neutral', 'Negative'],
+            datasets: [{
+                data: [75, 20, 5],
+                backgroundColor: [
+                    'rgba(167, 232, 199, 0.8)',
+                    'rgba(245, 166, 90, 0.8)',
+                    'rgba(240, 108, 108, 0.8)'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '70%',
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+  });
+</script>
+{% endblock %}

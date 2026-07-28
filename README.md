@@ -40,7 +40,7 @@ generation and `gemini-2.5-flash-image` for creative images. Replace the key wit
 python app.py
 ```
 
-Visit `http://localhost:5002`, create an account, then **New Campaign Kit** to import a report.
+Visit `http://localhost:5000`, create an account, then **New Campaign Kit** to import a report.
 
 ## Offline fallback
 

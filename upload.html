@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Import Campaign Report · MarketCraft AI{% endblock %}
+{% block content %}
+<div class="page-header" style="text-align:center;">
+
+  <h1>New Marketing Campaign</h1>
+  <p style="margin-left:auto;margin-right:auto;">Provide your campaign details or upload a brief, and the MarketCraft AI Agent will handle the rest.</p>
+</div>
+
+<div class="page-shell">
+  <div class="mode-toggle">
+    <button type="button" data-mode-btn="file" class="active">📄 Upload Report (PDF/DOCX)</button>
+    <button type="button" data-mode-btn="manual">✍️ Manual Entry</button>
+  </div>
+
+  <form method="POST" action="{{ url_for('upload_report') }}" enctype="multipart/form-data">
+    <input type="hidden" name="mode" id="mode-input" value="file">
+
+    <div data-mode-panel="file" class="card" style="margin-bottom:16px;">
+      <div class="dropzone" id="dropzone">
+        <div class="dz-icon">📥</div>
+        <strong>Click to browse or drag a file here</strong>
+        <p style="margin:6px 0 0;">Accepted formats: PDF, DOCX, TXT — up to 15MB</p>
+      </div>
+      <input type="file" id="report_file" name="report_file" accept=".pdf,.docx,.txt" style="display:none;">
+    </div>
+
+    <div data-mode-panel="manual" class="card" style="margin-bottom:16px; display:none;">
+      <div class="form-group" style="margin-bottom:0;">
+        <label for="manual-description">Or Describe the Campaign:</label>
+        <textarea id="manual-description" name="manual_description" rows="5" placeholder="e.g. We are launching a new eco-friendly water bottle next month. Target audience is outdoorsy millennials..."></textarea>
+        <p class="hint">Include as much detail as you have - the AI Agent will fill in gaps sensibly.</p>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-block">Analyze Campaign Report →</button>
+  </form>
+
+  <div class="grid grid-3" style="margin-top:36px;">
+    <div class="card feature-card">
+      <div class="feature-icon violet">📥</div>
+      <h3>Import Module</h3>
+      <p>Extracts and validates campaign data from your report.</p>
+    </div>
+    <div class="card feature-card">
+      <div class="feature-icon rose">🧠</div>
+      <h3>Campaign Analysis</h3>
+      <p>The AI extracts key themes, target audience, and product goals.</p>
+    </div>
+    <div class="card feature-card">
+      <div class="feature-icon sky">⚡</div>
+      <h3>Content Generation</h3>
+      <p>The AI dynamically generates tailored copy, SEO metadata, visuals, and video scripts.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
