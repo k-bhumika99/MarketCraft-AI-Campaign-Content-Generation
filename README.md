@@ -57,3 +57,7 @@ way are flagged in the UI.
 - **Export:** ReportLab (PDF), python-docx (DOCX)
 - **Frontend:** Jinja2, vanilla JS, glassmorphism/pastel CSS (violet–rose gradient theme)
 - **Auth:** Werkzeug session-based auth, `login_required` decorator, user-scoped queries
+
+
+##Deployment
+ https://alarm-poker-frustrate.ngrok-free.dev 
